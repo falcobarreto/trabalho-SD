@@ -12,8 +12,8 @@ async def main():
     consumer = Consumer(
         host=RABBITMQ_SERVER_IP,
         port=5552,
-        username='trabSD',     
-        password='guerraguerra'  
+        username='usuario_rabbitmq',     
+        password='senha_rabbitmq'  
     )
 
     try:
