@@ -3,7 +3,7 @@ from rstream.consumer import Consumer
 import rstream.exceptions
 
 # IP local
-RABBITMQ_SERVER_IP = "localhost" # ou 'localhost'
+RABBITMQ_SERVER_IP = "localhost" 
 
 async def message_handler(message, context):
     print(f" [<-] RECEBIDO: offset={context.offset}, body='{message.decode('utf-8')}'")
@@ -12,8 +12,8 @@ async def main():
     consumer = Consumer(
         host=RABBITMQ_SERVER_IP,
         port=5552,
-        username='trabSD',      # Use o usuário que criamos
-        password='guerraguerra'  # Use a senha que criamos
+        username='trabSD',     
+        password='guerraguerra'  
     )
 
     try:
@@ -25,8 +25,6 @@ async def main():
                 print(" [i] Stream 'sensor-data' já existe. Conectando...")
                 pass
 
-            # --- CORREÇÃO APLICADA ---
-            # A chamada correta, com apenas 2 argumentos: o stream e o callback.
             await consumer.subscribe(
                 'sensor-data',
                 message_handler
