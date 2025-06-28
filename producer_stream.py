@@ -10,8 +10,8 @@ async def main():
     producer = Producer(
         host=RABBITMQ_SERVER_IP,
         port=5552,
-        username='trabSD',      # Use o usuário que criamos
-        password='guerraguerra'  # Use a senha que criamos
+        username='trabSD',      
+        password='guerraguerra'  
     )
 
     async with producer:
@@ -31,9 +31,7 @@ async def main():
             temp = round(random.uniform(15.0, 30.0), 2)
             message_body = f"id:{message_id},sensor:temp01,value:{temp}°C"
             message = message_body.encode('utf-8')
-
-            # --- CORREÇÃO FINAL ---
-            # Removemos os colchetes []. Enviamos o objeto 'message' diretamente.
+            
             await producer.send('sensor-data', message)
             # --------------------
 
