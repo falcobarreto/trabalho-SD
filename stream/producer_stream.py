@@ -10,8 +10,8 @@ async def main():
     producer = Producer(
         host=RABBITMQ_SERVER_IP,
         port=5552,
-        username='trabSD',      
-        password='guerraguerra'  
+        username='usuario_rabbitmq',     
+        password='senha_rabbitmq'  
     )
 
     async with producer:
