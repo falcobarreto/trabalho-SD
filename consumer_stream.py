@@ -1,41 +1,48 @@
-import rabbitmq_stream
 import asyncio
+from rstream.consumer import Consumer
+import rstream.exceptions
 
 # IP local
-RABBITMQ_SERVER_IP = "192.168.1.21" # <-- MUDE AQUI para o seu IP ou 'localhost'
+RABBITMQ_SERVER_IP = "localhost" # ou 'localhost'
 
-async def consumer():
-    # Função que será chamada para cada mensagem recebida
-    async def message_handler(message: rabbitmq_stream.Message):
-        # A mensagem vem com offset, dados, etc. Pegamos o corpo (body).
-        print(f" [<-] Recebido: {message.body.decode('utf-8')}")
+async def message_handler(message, context):
+    print(f" [<-] RECEBIDO: offset={context.offset}, body='{message.decode('utf-8')}'")
 
-    # Conecta ao sistema de streams do RabbitMQ
-    stream_system = await rabbitmq_stream.connect(
-        host=RABBITMQ_SERVER_IP, port=5552, user="guest", password="guest"
-    )
-    
-    # Define de onde o consumidor começará a ler o fluxo.
-    # OffsetSpecification.first() -> Começa do início do stream.
-    offset = rabbitmq_stream.OffsetSpecification.first()
-
-    print(" [*] Consumidor aguardando mensagens. Para sair, pressione CTRL+C.")
-    
-    # Cria um consumidor para o stream, definindo o ponto de partida e o handler
-    consumer = await stream_system.create_consumer(
-        "sensor-data", offset, message_handler
+async def main():
+    consumer = Consumer(
+        host=RABBITMQ_SERVER_IP,
+        port=5552,
+        username='trabSD',      # Use o usuário que criamos
+        password='guerraguerra'  # Use a senha que criamos
     )
 
     try:
-        # Mantém o script rodando para receber mensagens
-        await asyncio.sleep(3600) # Mantém ativo por 1 hora ou até ser interrompido
-    except (KeyboardInterrupt, SystemExit):
-        print(" [!] Consumidor encerrado.")
-    finally:
-        # Fecha o consumidor e a conexão
-        await consumer.close()
-        await stream_system.close()
+        async with consumer:
+            try:
+                await consumer.create_stream('sensor-data')
+                print(" [i] Stream 'sensor-data' criado pelo consumidor.")
+            except rstream.exceptions.StreamAlreadyExists:
+                print(" [i] Stream 'sensor-data' já existe. Conectando...")
+                pass
 
+            # --- CORREÇÃO APLICADA ---
+            # A chamada correta, com apenas 2 argumentos: o stream e o callback.
+            await consumer.subscribe(
+                'sensor-data',
+                message_handler
+            )
+            # -------------------------
 
-if __name__ == "__main__":
-    asyncio.run(consumer())
+            print("\n [*] CONSUMIDOR FUNCIONANDO! Aguardando mensagens... (Pressione CTRL+C para sair)")
+            await asyncio.Event().wait()
+
+    except asyncio.CancelledError:
+        print("\n [!] Consumidor encerrado.")
+    except Exception as e:
+        print(f"\n [!] Ocorreu um erro: {e}")
+
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n [!] Programa interrompido pelo usuário.")

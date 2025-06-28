@@ -1,49 +1,50 @@
-import rabbitmq_stream
 import asyncio
+from rstream.producer import Producer
 import time
 import random
 
 # IP local
-RABBITMQ_SERVER_IP = "192.168.1.21" # <-- MUDE AQUI para o seu IP ou 'localhost'
+RABBITMQ_SERVER_IP = "localhost"
 
-async def producer():
-    # Conecta ao sistema de streams do RabbitMQ
-    stream_system = await rabbitmq_stream.connect(
-        host=RABBITMQ_SERVER_IP, port=5552, user="guest", password="guest"
+async def main():
+    producer = Producer(
+        host=RABBITMQ_SERVER_IP,
+        port=5552,
+        username='trabSD',      # Use o usuário que criamos
+        password='guerraguerra'  # Use a senha que criamos
     )
 
-    # Cria o stream (se não existir)
-    await stream_system.create_stream("sensor-data")
-
-    # Cria um produtor para o stream específico
-    producer = await stream_system.create_producer("sensor-data")
-
-    print(" [x] Produtor iniciado. Enviando leituras de sensor...")
-    message_id = 1
-    while True:
+    async with producer:
         try:
+            await producer.create_stream('sensor-data')
+            print(" [i] Stream 'sensor-data' criado.")
+        except Exception as e:
+            if "StreamAlreadyExists" in str(e):
+                 print(" [i] Stream 'sensor-data' já existe. Continuando.")
+                 pass
+            else:
+                raise e
+
+        print(" [x] Produtor conectado. Enviando leituras de sensor...")
+        message_id = 1
+        while True:
             temp = round(random.uniform(15.0, 30.0), 2)
             message_body = f"id:{message_id},sensor:temp01,value:{temp}°C"
-            
-            # Converte a mensagem para bytes e a envia
             message = message_body.encode('utf-8')
-            await producer.send(message)
-            
+
+            # --- CORREÇÃO FINAL ---
+            # Removemos os colchetes []. Enviamos o objeto 'message' diretamente.
+            await producer.send('sensor-data', message)
+            # --------------------
+
             print(f" [->] Enviado: {message_body}")
-            
             message_id += 1
-            time.sleep(1) # Aguarda 1 segundo
-        except (KeyboardInterrupt, SystemExit):
-            print(" [!] Produtor encerrado.")
-            break
-        except Exception as e:
-            print(f"Erro: {e}")
-            break
+            await asyncio.sleep(1)
 
-    # Fecha o produtor e a conexão
-    await producer.close()
-    await stream_system.close()
-
-
-if __name__ == "__main__":
-    asyncio.run(producer())
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n [!] Programa interrompido pelo usuário.")
+    except Exception as e:
+        print(f"\n [!] Ocorreu um erro: {e}")
